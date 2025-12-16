@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS requests (
+  id SERIAL PRIMARY KEY,
+  backend_name TEXT NOT NULL,
+  ts TIMESTAMP DEFAULT NOW(),
+  meta JSONB,
+  image BYTEA
+);
+

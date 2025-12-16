@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: k8s-assessment
+data:
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "images_db"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-script
+  namespace: k8s-assessment
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS requests (
+      id SERIAL PRIMARY KEY,
+      backend_name TEXT NOT NULL,
+      ts TIMESTAMP DEFAULT NOW(),
+      meta JSONB,
+      image BYTEA
+    );
