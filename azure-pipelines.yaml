@@ -8,7 +8,7 @@ variables:
   # --- CONFIGURATION (Update these matches your setup) ---
   azureSubscription: 'azure-connection'   # Name of ARM Service Connection
   k8sConnection: 'aks-connection'         # Name of Kubernetes Service Connection
-  dockerRegistryConnection: 'acr-connection' # Name of Docker Registry Service Connection
+  dockerRegistryConnection: 'acr-admin-connection' # Name of Docker Registry Service Connection
   
   acrName: 'seanacrproject'                   # Your ACR Name (e.g., seanacrproject)
   acrLoginServer: 'seanacrproject.azurecr.io' # Your Full ACR Login Server
