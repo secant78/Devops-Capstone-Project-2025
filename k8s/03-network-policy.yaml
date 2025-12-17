@@ -9,48 +9,12 @@ spec:
   - Ingress
   - Egress
 ---
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-frontend-logic
-  namespace: k8s-assessment
-spec:
-  podSelector:
-    matchLabels:
-      app: frontend
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - {} # Allow all external traffic to frontend
-  egress:
-  # Allow Frontend -> Backend A (Port 80)
-  - to:
-    - podSelector:
-        matchLabels:
-          app: backend-a
-    ports:
-    - protocol: TCP
-      port: 8080
-  # Allow Frontend -> Backend B (Port 80)
-  - to:
-    - podSelector:
-        matchLabels:
-          app: backend-b
-    ports:
-    - protocol: TCP
-      port: 8080
-  # Allow DNS (Critical for Service Discovery)
-  - ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
+# NOTE: 'allow-frontend-logic' REMOVED (Frontend is now external App Service)
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-backend-a-ingress
+  name: allow-backend-a-logic
   namespace: k8s-assessment
 spec:
   podSelector:
@@ -60,21 +24,17 @@ spec:
   - Ingress
   - Egress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: frontend
-    ports:
+  # Allow traffic from the Ingress Controller
+  # (We allow all sources on port 8080 because the Ingress Controller lives in a different namespace)
+  - ports:
     - protocol: TCP
-      port: 8080  # <--- CHANGE THIS to match your 'containerPort'
+      port: 8080
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: postgres
-    ports:
+  # Allow traffic out to Azure Database for PostgreSQL (External PaaS)
+  - ports:
     - protocol: TCP
       port: 5432
+  # Allow DNS resolution (Critical for finding the DB hostname)
   - ports:
     - protocol: UDP
       port: 53
@@ -84,60 +44,30 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-backend-b-ingress
+  name: allow-backend-b-logic
   namespace: k8s-assessment
 spec:
   podSelector:
     matchLabels:
-      app: backend-b  # Explicitly target Backend B
+      app: backend-b
   policyTypes:
   - Ingress
   - Egress
   ingress:
-  # Allow Frontend -> Backend B
-  - from:
-    - podSelector:
-        matchLabels:
-          app: frontend
-    ports:
+  # Allow traffic from the Ingress Controller
+  - ports:
     - protocol: TCP
       port: 8080
   egress:
-  # Allow Backend B -> Postgres
-  - to:
-    - podSelector:
-        matchLabels:
-          app: postgres
-    ports:
+  # Allow traffic out to Azure Database for PostgreSQL (External PaaS)
+  - ports:
     - protocol: TCP
       port: 5432
-  # Allow DNS
+  # Allow DNS resolution
   - ports:
     - protocol: UDP
       port: 53
     - protocol: TCP
       port: 53
 ---
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-postgres-ingress
-  namespace: k8s-assessment
-spec:
-  podSelector:
-    matchLabels:
-      app: postgres
-  policyTypes:
-  - Ingress
-  ingress:
-  # Allow Backend A & B -> Postgres
-  - from:
-    - podSelector:
-        matchLabels:
-          app: backend-a
-    - podSelector:
-        matchLabels:
-          app: backend-b
-    ports:
-    - protocol: TCP
-      port: 5432
+# NOTE: 'allow-postgres-ingress' REMOVED (Database is now external PaaS)

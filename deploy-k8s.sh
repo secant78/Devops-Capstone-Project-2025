@@ -14,22 +14,11 @@ echo "Applying Network Policies and Quotas..."
 kubectl apply -f k8s/03-network-policy.yaml
 kubectl apply -f k8s/04-resource-quota.yaml
 
-# 4. Database
-echo "Deploying PostgreSQL..."
-kubectl apply -f k8s/10-postgres.yaml
-
-# WAIT for Postgres to be ready
-echo "Waiting for PostgreSQL to be ready..."
-kubectl rollout status statefulset/postgres -n k8s-assessment
-
 # 5. Backend Services
 echo "Deploying Backends..."
 kubectl apply -f k8s/20-backend-a.yaml
 kubectl apply -f k8s/21-backend-b.yaml
 
-# 6. Frontend
-echo "Deploying Frontend..."
-kubectl apply -f k8s/30-frontend.yaml
 
 # 7. Autoscaling
 echo "Applying HPA..."
