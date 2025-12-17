@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: api-ingress
-  namespace: k8s-assessment
+  namespace: sean-k8s-assessment
   annotations:
     # Use the standard NGINX class
     kubernetes.io/ingress.class: nginx

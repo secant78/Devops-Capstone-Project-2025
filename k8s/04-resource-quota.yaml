@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: compute-quota
-  namespace: k8s-assessment
+  namespace: sean-k8s-assessment
 spec:
   hard:
     requests.cpu: "4"

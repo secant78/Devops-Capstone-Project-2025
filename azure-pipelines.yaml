@@ -12,7 +12,7 @@ variables:
   
   acrName: 'seanacrproject'                   # Your ACR Name (e.g., seanacrproject)
   acrLoginServer: 'seanacrproject.azurecr.io' # Your Full ACR Login Server
-  namespace: 'k8s-assessment'             # Namespace defined in 00-namespace.yaml
+  namespace: 'sean-k8s-assessment'             # Namespace defined in 00-namespace.yaml
   # -------------------------------------------------------
 
 steps:
