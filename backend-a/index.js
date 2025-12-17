@@ -32,7 +32,10 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", backend: BACKEND, port: PORT });
 });
 
-app.post("/api/a", upload.single("image"), async (req, res) => {
+// ✅ CHANGE THIS LINE
+// Allow both "/" (if Ingress strips path) and "/api/a" (if it doesn't)
+
+app.post(["/", "/api/a", "/upload"], upload.single("image"), async (req, res) => {
   try {
     const image = req.file ? req.file.buffer : null;
 
