@@ -7,7 +7,8 @@ metadata:
     kubernetes.io/ingress.class: nginx
     # Rewrite path
     nginx.ingress.kubernetes.io/rewrite-target: /$2
-    # 🟢 KEEP THIS: Allow large file uploads (Fixes the 400/JSON error)
+    # 🟢 CRITICAL: This allows the 50MB upload. 
+    # (This wasn't applied yet because the last deployment failed!)
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
@@ -19,7 +20,8 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            # 🟢 REVERT THIS: Use the short name only
+            # 🟢 FIX: Use ONLY the short name. 
+            # (The previous "FQDN" with dots caused the pipeline crash)
             name: backend-a-service
             port:
               number: 8080
@@ -29,7 +31,7 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            # 🟢 REVERT THIS: Use the short name only
+            # 🟢 FIX: Use ONLY the short name.
             name: backend-b-service
             port:
               number: 8080
