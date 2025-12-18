@@ -4,9 +4,9 @@ metadata:
   name: app-config
   namespace: sean-k8s-assessment
 data:
-  DB_HOST: "postgres-service"
+  DB_HOST: "dev-psql-c1ddii.postgres.database.azure.com" 
   DB_PORT: "5432"
-  DB_NAME: "images_db"
+  DB_NAME: "dev-db"
 ---
 apiVersion: v1
 kind: ConfigMap
