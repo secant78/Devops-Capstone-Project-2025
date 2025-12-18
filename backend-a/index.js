@@ -1,7 +1,11 @@
 const express = require("express");
 const multer = require("multer");
-const upload = multer();
 const { Pool } = require("pg");
+
+// 🟢 FIX 1: Explicitly set Multer limit to 50MB
+const upload = multer({
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
 
 const BACKEND = "backend-a";
 const PORT = process.env.PORT || 8080;
@@ -15,6 +19,11 @@ const pool = new Pool({
 });
 
 const app = express();
+
+// 🟢 FIX 2: Increase Express Body Parser limits to 50MB
+// (Crucial if any part of the request is treated as JSON/Text)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Enable CORS for local development
 app.use((req, res, next) => {
@@ -32,9 +41,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", backend: BACKEND, port: PORT });
 });
 
-// ✅ CHANGE THIS LINE
-// Allow both "/" (if Ingress strips path) and "/api/a" (if it doesn't)
-
+// Upload Endpoint
 app.post(["/", "/api/a", "/upload"], upload.single("image"), async (req, res) => {
   try {
     const image = req.file ? req.file.buffer : null;
@@ -56,9 +63,9 @@ app.post(["/", "/api/a", "/upload"], upload.single("image"), async (req, res) =>
     });
 
   } catch (err) {
+    console.error(err); // 🟢 Added logging to help debug
     res.status(500).json({ error: "Database not responding", details: err.message });
   }
 });
 
 app.listen(PORT, () => console.log(`${BACKEND} running on port ${PORT}`));
-
