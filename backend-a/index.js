@@ -21,7 +21,7 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false 
   }
-  
+
 });
 
 const app = express();
@@ -63,6 +63,25 @@ app.get("/test-db", async (req, res) => {
       message: "❌ Database connection FAILED", 
       details: err.message 
     });
+  }
+});
+
+// 🟢 NEW: Initialize Database Table
+app.get("/init-db", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS requests (
+        id SERIAL PRIMARY KEY,
+        backend_name TEXT NOT NULL,
+        ts TIMESTAMP DEFAULT NOW(),
+        meta JSONB,
+        image BYTEA
+      );
+    `);
+    res.json({ status: "success", message: "✅ Table 'requests' created successfully!" });
+  } catch (err) {
+    console.error("Init Error:", err);
+    res.status(500).json({ status: "error", details: err.message });
   }
 });
 
