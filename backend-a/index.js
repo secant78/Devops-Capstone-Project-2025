@@ -41,6 +41,25 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", backend: BACKEND, port: PORT });
 });
 
+// 🟢 NEW: Database Connection Test Endpoint (Added this block)
+app.get("/test-db", async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW() as time');
+    res.json({ 
+      status: "success", 
+      message: "✅ Database connection is HEALTHY!", 
+      serverTime: result.rows[0].time 
+    });
+  } catch (err) {
+    console.error("DB Test Error:", err);
+    res.status(500).json({ 
+      status: "error", 
+      message: "❌ Database connection FAILED", 
+      details: err.message 
+    });
+  }
+});
+
 // Upload Endpoint
 app.post(["/", "/api/a", "/upload"], upload.single("image"), async (req, res) => {
   try {
