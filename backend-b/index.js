@@ -1,7 +1,11 @@
 const express = require("express");
 const multer = require("multer");
-const upload = multer();
 const { Pool } = require("pg");
+
+// 🟢 FIX 1: Explicitly set Multer limit to 50MB
+const upload = multer({
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
 
 const BACKEND = "backend-b";
 const PORT = process.env.PORT || 8080;
@@ -13,13 +17,17 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 
-  // 🟢 FIX: Enable SSL for Azure Postgres
+  // 🟢 FIX 2: Enable SSL for Azure Postgres
   ssl: {
     rejectUnauthorized: false 
   }
 });
 
 const app = express();
+
+// 🟢 FIX 3: Increase Express Body Parser limits to 50MB
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Enable CORS for local development
 app.use((req, res, next) => {
@@ -37,7 +45,28 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", backend: BACKEND, port: PORT });
 });
 
-app.post("/api/b", upload.single("image"), async (req, res) => {
+// 🟢 NEW: Database Connection Test Endpoint
+app.get("/test-db", async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW() as time');
+    res.json({ 
+      status: "success", 
+      message: "✅ Backend B Database connection is HEALTHY!", 
+      serverTime: result.rows[0].time 
+    });
+  } catch (err) {
+    console.error("DB Test Error:", err);
+    res.status(500).json({ 
+      status: "error", 
+      message: "❌ Database connection FAILED", 
+      details: err.message 
+    });
+  }
+});
+
+// 🟢 FIX 4: Updated Routes to match Ingress Rewrites
+// Your Ingress rewrites /api/b -> /, so we must listen on "/"
+app.post(["/", "/api/b", "/upload"], upload.single("image"), async (req, res) => {
   try {
     const image = req.file ? req.file.buffer : null;
 
@@ -58,9 +87,9 @@ app.post("/api/b", upload.single("image"), async (req, res) => {
     });
 
   } catch (err) {
+    console.error(err); // 🟢 Added logging
     res.status(500).json({ error: "Database not responding", details: err.message });
   }
 });
 
 app.listen(PORT, () => console.log(`${BACKEND} running on port ${PORT}`));
-
