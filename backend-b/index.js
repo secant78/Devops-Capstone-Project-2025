@@ -2,6 +2,22 @@ const express = require("express");
 const multer = require("multer");
 const { Pool } = require("pg");
 
+// 🟢 NEW: Import Prometheus Client
+const client = require('prom-client');
+
+// 🟢 NEW: Create a Registry and Enable Default Metrics
+// (This automatically collects CPU, Memory, Event Loop Lag, etc.)
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+
+// 🟢 NEW: Create a custom histogram for tracking HTTP duration
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
+});
+
 // 🟢 FIX 1: Explicitly set Multer limit to 50MB
 const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
@@ -17,7 +33,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 
-  // 🟢 FIX 2: Enable SSL for Azure Postgres
+  // 🟢 FIX: Enable SSL for Azure Postgres
   ssl: {
     rejectUnauthorized: false 
   }
@@ -25,7 +41,17 @@ const pool = new Pool({
 
 const app = express();
 
-// 🟢 FIX 3: Increase Express Body Parser limits to 50MB
+// 🟢 NEW: Middleware to measure request duration
+// (Must be placed BEFORE your routes)
+app.use((req, res, next) => {
+  const end = httpRequestDurationMicroseconds.startTimer();
+  res.on('finish', () => {
+    end({ method: req.method, route: req.route ? req.route.path : req.path, code: res.statusCode });
+  });
+  next();
+});
+
+// 🟢 FIX 2: Increase Express Body Parser limits to 50MB
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -38,6 +64,13 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   next();
+});
+
+// 🟢 NEW: The "/metrics" Endpoint
+// Prometheus will hit this URL every ~15s to get data
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 // Health check endpoint
@@ -87,7 +120,7 @@ app.post(["/", "/api/b", "/upload"], upload.single("image"), async (req, res) =>
     });
 
   } catch (err) {
-    console.error(err); // 🟢 Added logging
+    console.error(err); // 🟢 Added logging to help debug
     res.status(500).json({ error: "Database not responding", details: err.message });
   }
 });
