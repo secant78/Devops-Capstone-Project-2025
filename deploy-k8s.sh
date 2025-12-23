@@ -28,7 +28,7 @@ echo "Setting up Ingress..."
 kubectl apply -f k8s/50-ingress.yaml
 
 echo "Application Deployment Complete! Checking App status..."
-kubectl get all -n k8s-assessment
+kubectl get all -n sean-k8s-assessment
 
 # --- 9. Monitoring and Logging Setup with Helm ---
 echo "----------------------------------------------------"
@@ -51,11 +51,13 @@ echo "Deploying/Updating Prometheus & Grafana..."
   --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
 
 # C. Install/Upgrade Logs Stack (Loki + Promtail)
+# - 'isDefault=false' prevents it from conflicting with Prometheus as the default datasource
 echo "Deploying/Updating Loki (Logs)..."
 ./helm upgrade --install loki grafana/loki-stack \
   --namespace monitoring \
   --set grafana.enabled=false \
-  --set promtail.enabled=true
+  --set promtail.enabled=true \
+  --set loki.isDefault=false
 
 echo "----------------------------------------------------"
 echo "Monitoring Deployment Triggered!" 

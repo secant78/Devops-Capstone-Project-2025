@@ -8,7 +8,8 @@ spec:
   selector:
     app: backend-a
   ports:
-    - port: 8080
+    - name: http          # 🟢 CRITICAL FIX: This name must match the ServiceMonitor
+      port: 8080
       targetPort: 8080
 ---
 apiVersion: apps/v1
@@ -30,10 +31,11 @@ spec:
     spec:
       containers:
       - name: backend-a
-        image: seanacrproject.azurecr.io/backend-a:latest # Replace with your registry image
+        image: seanacrproject.azurecr.io/backend-a:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - name: http      # 🟢 Added for consistency
+          containerPort: 8080
         env:
         - name: PORT
           value: "8080"
