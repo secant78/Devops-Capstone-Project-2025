@@ -47,7 +47,8 @@ echo "Deploying/Updating Prometheus & Grafana..."
 ./helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
   --set grafana.adminPassword="admin" \
-  --set grafana.persistence.enabled=false \
+  --set grafana.persistence.enabled=true \
+  --set grafana.persistence.size=10Gi \
   --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
 
 # C. Install/Upgrade Logs Stack (Loki + Promtail)
