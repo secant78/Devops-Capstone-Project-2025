@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: backend-a-service
   namespace: sean-k8s-assessment
+labels:
+    app: backend-a
 spec:
   type: ClusterIP
   selector:
