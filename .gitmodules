@@ -1,0 +1,9 @@
+[submodule "repo-ui"]
+	path = repo-ui
+	url = https://dev.azure.com/SeanCancino/devops_training/_git/repo-ui
+[submodule "repo-api"]
+	path = repo-api
+	url = https://dev.azure.com/SeanCancino/devops_training/_git/repo-api
+[submodule "terraform"]
+	path = terraform
+	url = https://dev.azure.com/SeanCancino/devops_training/_git/devops_training
