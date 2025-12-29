@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-b-service
+  namespace: sean-k8s-assessment
+  labels:
+    app: backend-b
+spec:
+  type: ClusterIP
+  selector:
+    app: backend-b
+  ports:
+    - name: http          # 🟢 CRITICAL FIX: Matches ServiceMonitor
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-b
+  namespace: sean-k8s-assessment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-b
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: backend-b
+        tier: backend
+    spec:
+      containers:
+      - name: backend-b
+        image: seanacrproject.azurecr.io/backend-b:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http      # 🟢 Added for consistency
+          containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "20m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
