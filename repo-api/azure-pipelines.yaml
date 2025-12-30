@@ -109,12 +109,13 @@ steps:
 
   - script: |
       kubectl create secret docker-registry acr-secret \
+        -n $(namespace) \
         --docker-server=$(acrLoginServer) \
         --docker-username=$(acrName) \
         --docker-password=$(acrPassword) \
         --docker-email=admin@example.com \
-        --dry-run=client -o yaml | kubectl apply -f -
-    displayName: 'Apply ACR Secret'
+        --dry-run=client -o yaml | kubectl apply -n $(namespace) -f -
+    displayName: 'Apply ACR Secret to $(namespace)'
     env:
       acrPassword: $(acrPassword)
 
