@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: sean-bg-demo-1
+  namespace: default
+spec:
+  replicas: 2
+  strategy:
+    blueGreen: 
+      activeService: sean-prod-1
+      previewService: sean-preview-1
+      autoPromotionEnabled: false
+  selector:
+    matchLabels:
+      app: sean-bg-1
+  template:
+    metadata:
+      labels:
+        app: sean-bg-1
+    spec:
+      containers:
+      - name: rollout-demo
+        image: argoproj/rollouts-demo:green     # chnaged the image from blue(current) to green(the updated)
+        ports:
+        - containerPort: 8080

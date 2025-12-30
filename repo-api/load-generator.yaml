@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: load-generator
+  namespace: k8s-assessment
+  labels:
+    app: frontend # <--- TRICK: Impersonate frontend to bypass NetworkPolicy
+spec:
+  containers:
+  - name: load-generator
+    image: busybox
+    # This command hits the backend 100 times per second
+    command: ["/bin/sh", "-c"]
+    args: ["while sleep 0.01; do wget -q -O- http://backend-a-service.k8s-assessment.svc.cluster.local:8080/health; done"]
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+  restartPolicy: Never

@@ -1,0 +1,136 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # --- CONFIGURATION ---
+  azureSubscription: 'azure-connection'
+  k8sConnection: 'aks-connection'
+  dockerRegistryConnection: 'acr-admin-connection'
+  
+  acrName: 'seanacrproject'
+  acrLoginServer: 'seanacrproject.azurecr.io'
+  namespace: 'sean-k8s-assessment'
+
+  # --- SONARQUBE VARIABLES (From api.yaml) ---
+  SONARQUBE_URL: "http://20.64.246.3:9000"
+  SONARQUBE_PROJECT_KEY: "sean-sonar-proj"
+  SONARQUBE_PROJECT_NAME: "sean-sonar-proj"
+  # -------------------------------------------------------
+
+steps:
+  - checkout: self
+
+  # 1. SONARQUBE ANALYSIS (Ported from api.yaml)
+  # NOTE: Ensure 'SONARQUBE_TOKEN' is set as a secret variable in the Pipeline UI
+  - script: |
+      docker run --rm \
+        -e SONAR_HOST_URL=$(SONARQUBE_URL) \
+        -e SONAR_TOKEN=$(SONARQUBE_TOKEN) \
+        -v $(System.DefaultWorkingDirectory):/usr/src \
+        sonarsource/sonar-scanner-cli:latest \
+        -Dsonar.projectKey=$(SONARQUBE_PROJECT_KEY) \
+        -Dsonar.projectName="$(SONARQUBE_PROJECT_NAME)" \
+        -Dsonar.sources=backend-a,backend-b \
+        -Dsonar.java.binaries=. \
+        -Dsonar.qualitygate.wait=true
+    displayName: "Run SonarQube Analysis"
+    env:
+      SONARQUBE_TOKEN: $(SONARQUBE_TOKEN)
+
+  # 2. Build Backend Images Locally for Scanning
+  - script: |
+      docker build -t backend-a-local ./backend-a
+      docker build -t backend-b-local ./backend-b
+    displayName: "Build Local Images for Scanning"
+
+  # 3. TRIVY VULNERABILITY SCAN (Ported from api.yaml)
+  - script: |
+      curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      curl -sSL -o html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+    displayName: "Install Trivy and Download Template"
+
+  - script: |
+      trivy image --format template --template "@html.tpl" --output trivy-backend-a.html backend-a-local
+      trivy image --format template --template "@html.tpl" --output trivy-backend-b.html backend-b-local
+    displayName: "Generate Trivy HTML Reports"
+
+  # Fail pipeline if High or Critical vulnerabilities are found
+  - script: |
+      trivy image --severity CRITICAL,HIGH --exit-code 1 backend-a-local
+      trivy image --severity CRITICAL,HIGH --exit-code 1 backend-b-local
+    displayName: "Check for High/Critical CVEs"
+
+  - task: PublishBuildArtifacts@1
+    displayName: "Publish Trivy Reports"
+    inputs:
+      PathtoPublish: "$(System.DefaultWorkingDirectory)"
+      ArtifactName: "trivy-reports"
+      publishLocation: "Container"
+
+  # 4. Build & Push Backend A (Final Tags)
+  - task: Docker@2
+    displayName: 'Build & Push Backend A'
+    inputs:
+      containerRegistry: '$(dockerRegistryConnection)'
+      repository: 'backend-a'
+      command: 'buildAndPush'
+      Dockerfile: 'backend-a/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+        latest
+
+  # 5. Build & Push Backend B (Final Tags)
+  - task: Docker@2
+    displayName: 'Build & Push Backend B'
+    inputs:
+      containerRegistry: '$(dockerRegistryConnection)'
+      repository: 'backend-b'
+      command: 'buildAndPush'
+      Dockerfile: 'backend-b/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+        latest
+
+  # 6. K8S Configuration & Deployment
+  - task: Kubernetes@1
+    displayName: 'Login to Cluster'
+    inputs:
+      connectionType: 'Kubernetes Service Connection'
+      kubernetesServiceEndpoint: '$(k8sConnection)'
+      namespace: '$(namespace)'
+      command: 'login'
+
+  - script: |
+      kubectl create secret docker-registry acr-secret \
+        --docker-server=$(acrLoginServer) \
+        --docker-username=$(acrName) \
+        --docker-password=$(acrPassword) \
+        --docker-email=admin@example.com \
+        --dry-run=client -o yaml | kubectl apply -f -
+    displayName: 'Apply ACR Secret'
+    env:
+      acrPassword: $(acrPassword)
+
+  - task: KubernetesManifest@0
+    displayName: 'Deploy to AKS'
+    inputs:
+      action: 'deploy'
+      kubernetesServiceConnection: '$(k8sConnection)'
+      namespace: '$(namespace)'
+      manifests: |
+        k8s/00-namespace.yaml
+        k8s/01-configmaps.yaml
+        k8s/02-secrets.yaml
+        k8s/03-network-policy.yaml
+        k8s/04-resource-quota.yaml
+        k8s/20-backend-a.yaml
+        k8s/21-backend-b.yaml
+        k8s/40-hpa.yaml
+        k8s/50-ingress.yaml
+      containers: |
+        $(acrLoginServer)/backend-a:$(Build.BuildId)
+        $(acrLoginServer)/backend-b:$(Build.BuildId)
+      imagePullSecrets: 'acr-secret'

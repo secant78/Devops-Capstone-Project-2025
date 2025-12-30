@@ -1,0 +1,73 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sean-k8s-assessment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# NOTE: 'allow-frontend-logic' REMOVED (Frontend is now external App Service)
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-a-logic
+  namespace: sean-k8s-assessment
+spec:
+  podSelector:
+    matchLabels:
+      app: backend-a
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from the Ingress Controller
+  # (We allow all sources on port 8080 because the Ingress Controller lives in a different namespace)
+  - ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow traffic out to Azure Database for PostgreSQL (External PaaS)
+  - ports:
+    - protocol: TCP
+      port: 5432
+  # Allow DNS resolution (Critical for finding the DB hostname)
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-b-logic
+  namespace: sean-k8s-assessment
+spec:
+  podSelector:
+    matchLabels:
+      app: backend-b
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from the Ingress Controller
+  - ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow traffic out to Azure Database for PostgreSQL (External PaaS)
+  - ports:
+    - protocol: TCP
+      port: 5432
+  # Allow DNS resolution
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# NOTE: 'allow-postgres-ingress' REMOVED (Database is now external PaaS)

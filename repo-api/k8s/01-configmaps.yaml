@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: sean-k8s-assessment
+data:
+  DB_HOST: "dev-psql-c1ddii.postgres.database.azure.com" 
+  DB_PORT: "5432"
+  DB_NAME: "dev-db"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-script
+  namespace: sean-k8s-assessment
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS requests (
+      id SERIAL PRIMARY KEY,
+      backend_name TEXT NOT NULL,
+      ts TIMESTAMP DEFAULT NOW(),
+      meta JSONB,
+      image BYTEA
+    );
