@@ -20,6 +20,6 @@ spec:
     spec:
       containers:
       - name: rollout-demo
-        image: argoproj/rollouts-demo:green     # chnaged the image from blue(current) to green(the updated)
+        image: seanacrproject.azurecr.io/backend-a:broken-tag-demo     # chnaged the image from blue(current) to green(the updated)
         ports:
         - containerPort: 8080
