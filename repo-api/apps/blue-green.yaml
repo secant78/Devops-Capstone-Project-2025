@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/secant78/Devops-Capstone-Project-2025.git
     targetRevision: HEAD
-    path: manifests
+    path: repo-api/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: sean-k8s-assessment

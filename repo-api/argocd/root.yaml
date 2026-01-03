@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://dev.azure.com/SeanCancino/devops_training/_git/repo-api
     targetRevision: HEAD
-    path: apps
+    path: repo-api/apps
   destination:
     server: https://kubernetes.default.svc
     namespace: sean-k8s-assessment
